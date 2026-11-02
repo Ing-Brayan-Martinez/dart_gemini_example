@@ -12,12 +12,12 @@ class DeviceResult {
 
 final class DeviceHelper {
   static Future<DeviceResult> getDevice() async {
-    DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
+    final deviceInfo = DeviceInfoPlugin();
     late String name;
     late String code;
 
     if (Platform.isAndroid) {
-      AndroidDeviceInfo androidInfo = await _deviceInfo.androidInfo;
+      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
       name = androidInfo.model;
       code = androidInfo.id;
 
@@ -27,8 +27,8 @@ final class DeviceHelper {
     }
 
     if (Platform.isIOS) {
-      IosDeviceInfo iosInfo = await _deviceInfo.iosInfo;
-      name = iosInfo.name!;
+      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+      name = iosInfo.name;
       code = iosInfo.identifierForVendor!;
 
       if (kDebugMode) {
@@ -37,7 +37,7 @@ final class DeviceHelper {
     }
 
     if (Platform.isLinux) {
-      LinuxDeviceInfo linuxInfo = await _deviceInfo.linuxInfo;
+      LinuxDeviceInfo linuxInfo = await deviceInfo.linuxInfo;
       name = linuxInfo.name;
       code = linuxInfo.machineId!;
 
@@ -47,7 +47,7 @@ final class DeviceHelper {
     }
 
     if (Platform.isMacOS) {
-      MacOsDeviceInfo macOsInfo = await _deviceInfo.macOsInfo;
+      MacOsDeviceInfo macOsInfo = await deviceInfo.macOsInfo;
       name = macOsInfo.computerName;
       code = macOsInfo.systemGUID!;
 
@@ -57,7 +57,7 @@ final class DeviceHelper {
     }
 
     if (Platform.isWindows) {
-      WindowsDeviceInfo windowsInfo = await _deviceInfo.windowsInfo;
+      WindowsDeviceInfo windowsInfo = await deviceInfo.windowsInfo;
       name = windowsInfo.computerName;
       code = windowsInfo.deviceId;
 

@@ -141,14 +141,14 @@ class _ApiKeyScreenState extends State<ApiKeyScreen> {
 }
 
 class _RequestDialog extends StatelessWidget {
-  const _RequestDialog({super.key});
+  const _RequestDialog();
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Material(
         borderRadius: BorderRadius.circular(20),
-        color: Theme.of(context).colorScheme.background,
+        color: Theme.of(context).colorScheme.surface,
         child: Container(
           height: 340,
           width: 340,
@@ -209,6 +209,7 @@ class _RequestDialog extends StatelessWidget {
 
   Widget _buildErrorWidget(BuildContext context, Object? error) {
     Future.delayed(const Duration(seconds: 1), () {
+      if (!context.mounted) return;
       Navigator.of(context).pop();
     });
     return Column(
@@ -254,6 +255,7 @@ class _RequestDialog extends StatelessWidget {
 
   Widget _buildDataWidget(BuildContext context, String apiKey) {
     Future.delayed(const Duration(seconds: 1), () {
+      if (!context.mounted) return;
       Navigator.pop(context);
       Navigator.of(context).pushNamedAndRemoveUntil(
           ChatScreen.routeName, (Route route) => false);

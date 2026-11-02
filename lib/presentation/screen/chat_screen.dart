@@ -73,6 +73,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildErrorWidget(BuildContext context, Object? error) {
     Future.delayed(const Duration(seconds: 1), () {
+      if (!context.mounted) return;
       Navigator.of(context).pop();
     });
     return Column(

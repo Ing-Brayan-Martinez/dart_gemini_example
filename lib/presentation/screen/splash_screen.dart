@@ -198,6 +198,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Widget _buildDataWidget(BuildContext context, Device data) {
     Future.delayed(const Duration(seconds: 3), () {
+      if (!context.mounted) return;
       switch (data.status) {
         case DeviceStatus.chat:
           Navigator.of(context).pushNamedAndRemoveUntil(
