@@ -8,6 +8,10 @@ class Logo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset('assets/images/gemini.jpg', width: width);
+    return Icon(
+              Icons.auto_awesome_rounded,
+              size: width,
+              color: Theme.of(context).colorScheme.primary,
+            );
   }
 }
