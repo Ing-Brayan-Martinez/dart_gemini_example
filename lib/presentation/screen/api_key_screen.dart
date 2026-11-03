@@ -1,15 +1,15 @@
 import 'package:dart_gemini_example/domain/controller/api_key_controller.dart';
 import 'package:dart_gemini_example/presentation/screen/chat_screen.dart';
-import 'package:dart_gemini_example/presentation/widget/image/done.dart';
-import 'package:dart_gemini_example/presentation/widget/textfield/textfield.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/link.dart';
 
 class ApiKeyScreen extends StatefulWidget {
   static const routeName = "/api_key";
 
-  const ApiKeyScreen({super.key});
+  const ApiKeyScreen({super.key, required this.controller});
+
+  final ApiKeyController controller;
 
   @override
   State<ApiKeyScreen> createState() => _ApiKeyScreenState();
@@ -17,270 +17,163 @@ class ApiKeyScreen extends StatefulWidget {
 
 class _ApiKeyScreenState extends State<ApiKeyScreen> {
   final TextEditingController _textController = TextEditingController();
+  bool _isSaving = false;
+  bool _obscureApiKey = true;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveApiKey() async {
+    final apiKey = _textController.text.trim();
+    if (_isSaving) return;
+    if (apiKey.isEmpty) {
+      setState(() {
+        _errorMessage = 'Enter an API key to continue.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await widget.controller.assignApiKey(apiKey);
+      if (!mounted) return;
+      context.go(ChatScreen.routeName);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = error.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text('API Key'),
+        title: const Text('Connect to Gemini'),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.only(left: 32, right: 32),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              if (context.isPortrait) {
-                //Vertical
-                if (context.isPhone) {
-                  return _getLayout();
-                } else {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Card(
+                color: colorScheme.surfaceContainerLow,
+                elevation: 0,
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      SizedBox(
-                        width: 400,
-                        child: _getLayout(),
+                      Icon(
+                        Icons.auto_awesome_rounded,
+                        color: colorScheme.primary,
+                        size: 40,
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        'Add your Gemini API key',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'The key is saved on this device and used to connect '
+                        'to the Gemini API.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 20),
+                      Align(
+                        child: Link(
+                          uri: Uri.https(
+                            'aistudio.google.com',
+                            '/app/apikey',
+                          ),
+                          target: LinkTarget.blank,
+                          builder: (context, followLink) => TextButton.icon(
+                            onPressed: followLink,
+                            icon: const Icon(Icons.open_in_new),
+                            label: const Text('Get an API key'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _textController,
+                        obscureText: _obscureApiKey,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        keyboardType: TextInputType.visiblePassword,
+                        textInputAction: TextInputAction.done,
+                        decoration: InputDecoration(
+                          labelText: 'API key',
+                          hintText: 'Paste your API key',
+                          prefixIcon: const Icon(Icons.key_rounded),
+                          suffixIcon: IconButton(
+                            tooltip: _obscureApiKey
+                                ? 'Show API key'
+                                : 'Hide API key',
+                            onPressed: () {
+                              setState(() {
+                                _obscureApiKey = !_obscureApiKey;
+                              });
+                            },
+                            icon: Icon(
+                              _obscureApiKey
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
+                          ),
+                        ),
+                        onSubmitted: (_) => _saveApiKey(),
+                      ),
+                      if (_errorMessage case final error?) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Could not save the API key: $error',
+                          style: TextStyle(color: colorScheme.error),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      FilledButton.icon(
+                        onPressed: _isSaving ? null : _saveApiKey,
+                        icon: _isSaving
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.arrow_forward_rounded),
+                        label: Text(_isSaving ? 'Saving...' : 'Continue'),
                       ),
                     ],
-                  );
-                }
-              } else {
-                //Horizontal
-                if (context.isPhone) {
-                  return _getLayout();
-                } else {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 400,
-                        child: _getLayout(),
-                      ),
-                    ],
-                  );
-                }
-              }
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _getLayout() {
-    return Column(
-      //mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 8),
-        Container(
-          constraints: const BoxConstraints(minWidth: 400),
-          child: const Text(
-            'To use the Gemini API, you\'ll need an API key. '
-            'If you don\'t already have one, '
-            'create a key in Google AI Studio.',
-          ),
-        ),
-        const SizedBox(height: 50),
-        Container(
-          constraints: const BoxConstraints(minWidth: 400),
-          child: Link(
-            uri: Uri.https('makersuite.google.com', '/app/apikey'),
-            target: LinkTarget.blank,
-            builder: (context, followLink) => TextButton(
-              onPressed: followLink,
-              child: const Text('Get an API Key'),
-            ),
-          ),
-        ),
-        const SizedBox(height: 50),
-        Container(
-          constraints: const BoxConstraints(minWidth: 400),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  decoration:
-                      textFieldDecoration(context, 'Enter your API key'),
-                  controller: _textController,
-                  onSubmitted: (value) {
-                    //onSubmitted(value);
-                  },
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () {
-                  String apiKey = _textController.value.text;
-
-                  if (apiKey.isNotEmpty) {
-                    ApiKeyController.to.assignApiKey(apiKey);
-
-                    showGeneralDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      barrierLabel: MaterialLocalizations.of(context)
-                          .modalBarrierDismissLabel,
-                      barrierColor: Colors.black45,
-                      transitionDuration: const Duration(milliseconds: 200),
-                      pageBuilder: (BuildContext buildContext,
-                          Animation animation, Animation secondaryAnimation) {
-                        return const _RequestDialog();
-                      },
-                    );
-                  }
-                },
-                child: const Text('Submit'),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RequestDialog extends StatelessWidget {
-  const _RequestDialog();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Material(
-        borderRadius: BorderRadius.circular(20),
-        color: Theme.of(context).colorScheme.surface,
-        child: Container(
-          height: 340,
-          width: 340,
-          padding: const EdgeInsets.only(left: 35, right: 35, top: 25),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Center(
-            child: GetBuilder<ApiKeyController>(
-              builder: (result) {
-                return StreamBuilder<String>(
-                  stream: result.apiKeyStream,
-                  builder: (context, AsyncSnapshot<String> snapshot) {
-                    //Si esta esperando data para el stream
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return _buildLoadingWidget(context);
-
-                      //Si hay data en el stream
-                    } else if (snapshot.connectionState ==
-                            ConnectionState.active &&
-                        !snapshot.hasError) {
-                      return _buildDataWidget(context, snapshot.data!);
-
-                      //Si hay un error en el stream
-                    } else if (snapshot.hasError) {
-                      return _buildErrorWidget(context, snapshot.error);
-
-                      //Si se completo el stream
-                    } else if (snapshot.connectionState ==
-                        ConnectionState.done) {
-                      return _buildCompleteWidget(context);
-                    } else {
-                      return _buildLoadingWidget(context);
-                    }
-                  },
-                );
-              },
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildCompleteWidget(BuildContext context) {
-    return Center(
-      child: Text('Done!'.tr),
-    );
-  }
-
-  Widget _buildLoadingWidget(BuildContext context) {
-    return Center(
-      child: CircularProgressIndicator(
-        color: Theme.of(context).colorScheme.onPrimary,
-      ),
-    );
-  }
-
-  Widget _buildErrorWidget(BuildContext context, Object? error) {
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!context.mounted) return;
-      Navigator.of(context).pop();
-    });
-    return Column(
-      children: [
-        const SizedBox(height: 40),
-        Icon(
-          Icons.error,
-          color: Theme.of(context).colorScheme.error,
-          size: 100,
-        ),
-        const SizedBox(height: 40),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Error'.tr,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontSize: 18,
-                fontFamily: 'OpenSans',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Try again'.tr,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontFamily: 'OpenSans',
-                fontSize: 36,
-                fontWeight: FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDataWidget(BuildContext context, String apiKey) {
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!context.mounted) return;
-      Navigator.pop(context);
-      Navigator.of(context).pushNamedAndRemoveUntil(
-          ChatScreen.routeName, (Route route) => false);
-    });
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const DoneImage(),
-        const SizedBox(height: 60),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Successful'.tr,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontFamily: 'OpenSans',
-                fontSize: 32,
-                fontWeight: FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-      ],
     );
   }
 }

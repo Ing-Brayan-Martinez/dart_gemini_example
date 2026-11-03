@@ -31,7 +31,7 @@ Este proyecto utiliza un sistema modular de "Skills" ubicado en [.agents/skills/
 | **Framework Base** | Flutter | `3.38.9` (Dart `^3.10`) |
 | **Gestión de Estado** | Signals (`signals_flutter`) | Estándar reactivo obligatorio |
 | **Navegación** | GoRouter | Enrutamiento declarativo y deep linking |
-| **Inyección de Dependencias** | GetX | Usado **exclusivamente** para DI vía `Bindings` |
+| **Inyección de Dependencias** | Provider | `MultiProvider` y dependencias explícitas por constructor |
 | **Autenticación** | Supabase (`supabase_flutter`) | Autenticación e inicialización |
 | **Acceso a Datos** | PostgreSQL (`postgres`) | Consultas directas con `Mutex` por servicio |
 | **Logging** | Signale (`signale`) | Logger unificado (`Log.i`, `Log.e`, etc.) |
@@ -47,14 +47,13 @@ Este proyecto utiliza un sistema modular de "Skills" ubicado en [.agents/skills/
 1. **Mutex para PostgreSQL (Cero Colisiones):**
    - **TODOS** los métodos de servicios PostgreSQL DEBEN usar un `Mutex` para proteger las consultas y evitar colisiones de conexión (`final _mutex = Mutex(); _mutex.protect(() async { ... })`).
 
-2. **Signals sobre GetX para Estado:**
-   - **NUNCA** usar `Rx`, `Obx` o `GetxController`.
-   - **NUNCA** usar `Get.find()` para gestión de estado en la UI.
+2. **Signals para el estado:**
    - Usar `signal()`, `computed()` y `SignalBuilder` (o `Watch`) para reactividad.
+   - No usar GetX ni RxDart; inyectar dependencias con `Provider` y estado con Signals.
 
 3. **Pureza del Dominio:**
    - `lib/domain/controllers/` DEBE contener **clases puras de Dart**.
-   - **SIN** importaciones de `package:flutter` ni `package:get` en controladores de dominio.
+   - **SIN** importaciones de `package:flutter` en controladores de dominio.
    - Usar `package:signals/signals.dart` para la lógica y el estado en esta capa.
 
 4. **Inyección de Dependencias por Constructor:**
@@ -374,7 +373,7 @@ Antes de reportar cualquier tarea como completada, el agente **DEBE** ejecutar y
    *Debe resultar en 0 errores y 0 advertencias.*
 
 3. **Verificación de Pureza del Dominio:**
-   *Verificar que `domain/controllers` sean clases puras de Dart sin importaciones de Flutter ni GetX.*
+   *Verificar que `domain/controllers` sean clases puras de Dart sin importaciones de Flutter.*
 
 4. **Verificación de Reactividad:**
    *Verificar que TODO el estado esté manejado exclusivamente con `Signals`.*

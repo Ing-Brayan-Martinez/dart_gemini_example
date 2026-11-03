@@ -8,7 +8,9 @@ class DoneImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 90,
-      child: SvgPicture.asset('assets/icons/done.svg'),
+      child: SvgPicture.asset('assets/icons/done.svg',
+      color: Theme.of(context).colorScheme.primary,
+      ),
     );
   }
 }
@@ -20,7 +22,9 @@ class SmallDoneImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 30,
-      child: SvgPicture.asset('assets/icons/done.svg'),
+      child: SvgPicture.asset('assets/icons/done.svg',
+      color: Theme.of(context).colorScheme.primary,
+      ),
     );
   }
 }

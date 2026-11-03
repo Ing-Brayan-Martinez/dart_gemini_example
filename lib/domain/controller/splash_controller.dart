@@ -1,60 +1,59 @@
 import 'package:dart_gemini_example/data/database/repository/device_repository.dart';
 import 'package:dart_gemini_example/domain/config/device_helper.dart';
 import 'package:dart_gemini_example/domain/config/enums.dart';
+import 'package:dart_gemini_example/domain/model/async_state.dart';
 import 'package:dart_gemini_example/domain/model/device.dart';
 import 'package:dart_gemini_example/domain/model/device_model.dart';
-import 'package:get/get.dart';
 import 'package:optional/optional.dart';
-import 'package:rxdart/rxdart.dart';
+import 'package:signals/signals.dart' show signal;
 import 'package:uuid/uuid.dart';
 
-class SplashController extends GetxController {
-  static SplashController get to => Get.find();
-  late DeviceRepository _deviceRepository;
-  late BehaviorSubject<Device> _subject;
+final class SplashController {
+  SplashController(
+    this._deviceRepository, {
+    DeviceInfoLoader? deviceInfoLoader,
+  }) : _deviceInfoLoader = deviceInfoLoader ?? DeviceHelper.getDevice;
 
-  SplashController() {
-    _deviceRepository = DeviceRepositoryImpl();
-    _subject = BehaviorSubject<Device>();
-  }
+  final DeviceRepository _deviceRepository;
+  final DeviceInfoLoader _deviceInfoLoader;
+  final state = signal<AsyncState<Device>>(const AsyncState.initial());
 
-  void getDeviceStatus() async {
-    final result = await DeviceHelper.getDevice();
+  Future<void> loadDeviceStatus() async {
+    state.value = const AsyncState.loading();
+    try {
+      final result = await _deviceInfoLoader();
+      final select = GetDevice(result.name, result.code);
+      final Optional<Device> existingDevice =
+          await _deviceRepository.findDefaultDevice(select);
 
-    final select = GetDevice(result.name, result.code);
-
-    final Optional<Device> optionalDefault =
-        await _deviceRepository.findDefaultDevice(select);
-
-    if (optionalDefault.isEmpty) {
-      final documentId = const Uuid().v4().toString();
-
-      final Device device = Device(documentId, true, DateTime.now(),
-          DateTime.now(), result.name, result.code, DeviceStatus.apikey, null);
-
-      final Optional<Device> optionalCreate =
-          await _deviceRepository.create(device);
-
-      if (optionalCreate.isPresent) {
-        final Device device = optionalCreate.value;
-
-        _subject.sink.add(device);
+      if (existingDevice.isPresent) {
+        state.value = AsyncState.completed(existingDevice.value);
+        return;
       }
-    } else {
-      final Device device = optionalDefault.value;
 
-      _subject.sink.add(device);
+      final now = DateTime.now();
+      final newDevice = Device(
+        const Uuid().v4(),
+        true,
+        now,
+        now,
+        result.name,
+        result.code,
+        DeviceStatus.apikey,
+        null,
+      );
+      final createdDevice = await _deviceRepository.create(newDevice);
+      if (createdDevice.isEmpty) {
+        throw StateError('The device could not be initialized.');
+      }
+
+      state.value = AsyncState.completed(createdDevice.value);
+    } catch (error) {
+      state.value = AsyncState.error(error);
     }
-
-    // FIN
-    update();
   }
 
-  @override
   void dispose() {
-    super.dispose();
-    _subject.close();
+    state.dispose();
   }
-
-  Stream<Device> get status => _subject.stream;
 }

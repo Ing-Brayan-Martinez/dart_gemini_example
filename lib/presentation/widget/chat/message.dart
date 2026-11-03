@@ -13,25 +13,37 @@ class MessageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment:
           isFromUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Flexible(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 480),
-            decoration: BoxDecoration(
-              color: isFromUser
-                  ? Theme.of(context).colorScheme.primaryContainer
-                  : Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(18),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isFromUser
+                    ? colorScheme.primaryContainer
+                    : colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: Radius.circular(isFromUser ? 20 : 6),
+                  bottomRight: Radius.circular(isFromUser ? 6 : 20),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(
+                vertical: 14,
+                horizontal: 18,
+              ),
+              margin: const EdgeInsets.only(bottom: 12),
+              child: MarkdownBody(
+                data: text,
+                styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
+              ),
             ),
-            padding: const EdgeInsets.symmetric(
-              vertical: 15,
-              horizontal: 20,
-            ),
-            margin: const EdgeInsets.only(bottom: 8),
-            child: MarkdownBody(data: text),
           ),
         ),
       ],

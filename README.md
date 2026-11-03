@@ -6,7 +6,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Data%20Access-teal.svg)](https://pub.dev/packages/postgres)
 [![Supabase](https://img.shields.io/badge/Supabase-Auth-green.svg)](https://supabase.com)
 
-Aplicación y panel de administración multiplataforma (Desktop, Mobile, Web) desarrollada con **Flutter 3.38.9** y **Dart ^3.10** para **French's Gold ERP**, implementando una **Arquitectura Reactiva en Capas** con gestión de estado mediante **Signals**, inyección de dependencias con **GetX** y persistencia sobre **PostgreSQL**.
+Aplicación multiplataforma (Desktop, Mobile, Web) desarrollada con **Flutter 3.38.9** y **Dart ^3.10**, con arquitectura reactiva por capas, gestión de estado mediante **Signals**, navegación con **GoRouter** e inyección de dependencias con **Provider**.
 
 ---
 
@@ -14,7 +14,7 @@ Aplicación y panel de administración multiplataforma (Desktop, Mobile, Web) de
 
 - **Gestión de Estado Reactiva:** Implementación estricta y reactiva mediante **Signals** (`signals_flutter`).
 - **Navegación & Deep Linking:** Enrutamiento declarativo multiplataforma utilizando **GoRouter**.
-- **Inyección de Dependencias:** Gestión limpia de dependencias con **GetX** usado exclusivamente vía `Bindings`.
+- **Inyección de Dependencias:** `MultiProvider` registra repositorios y controladores con dependencias explícitas por constructor.
 - **Acceso Asíncrono a PostgreSQL:** Persistencia directa y no bloqueante mediante el paquete `postgres`, protegida concurrentemente con `Mutex`.
 - **Autenticación e Inicialización:** Integración fluida con **Supabase** (`supabase_flutter`).
 - **Logging Unificado:** Monitoreo y trazabilidad de eventos estructurado con **Signale** (`signale`).
@@ -31,13 +31,24 @@ Aplicación y panel de administración multiplataforma (Desktop, Mobile, Web) de
 | **Framework Base** | Flutter | `3.38.9` |
 | **Gestión de Estado** | Signals | `signals_flutter` (Estándar obligatorio) |
 | **Navegación** | GoRouter | Routing declarativo y deep links |
-| **Inyección de Dependencias** | GetX | `Bindings` (Uso exclusivo para DI) |
+| **Inyección de Dependencias** | Provider | `MultiProvider` y dependencias explícitas por constructor |
 | **Autenticación** | Supabase | `supabase_flutter` |
 | **Base de Datos** | PostgreSQL direct | `postgres` (Con `Mutex` por servicio) |
 | **Logging** | Signale | `signale` (`Log.i`, `Log.e`, `Log.d`) |
 | **Configuración** | Flutter Dotenv | `flutter_dotenv` (`.env` asset) |
 | **Gestión de Ventanas** | Window Manager | `window_manager` (Desktop: Win/macOS/Linux) |
 | **Manejo de Nulos** | Optional | `optional` (Null-handling seguro en capa de datos) |
+
+---
+
+## Gemini API
+
+El chat usa `google_generative_ai` con el modelo `gemini-3.6-flash`. La versión
+actual de `google_generative_ai` está obsoleta y ya no recibe mantenimiento;
+Google recomienda migrar las aplicaciones Flutter a Firebase AI Logic. Esa
+migración requiere configurar Firebase y reemplazar el flujo actual de API Key.
+Consulta la [guía oficial de bibliotecas Gemini](https://ai.google.dev/gemini-api/docs/libraries)
+antes de desplegar esta integración en producción.
 
 ---
 
@@ -55,7 +66,7 @@ dart_gemini_example/
 │   │   │   ├── configuration/ # Configuración de conexión a PostgreSQL
 │   │   │   └── service/       # Servicios de consultas SQL (con Mutex)
 │   │   └── repository/        # Implementación concreta de repositorios
-│   ├── domain/                # Capa pura Dart (Sin dependencias de Flutter/GetX)
+│   ├── domain/                # Lógica de dominio y estado con Signals
 │   │   ├── config/            # Helpers de Mutex, Log, Context, PostgreSQL
 │   │   ├── controllers/       # Lógica de negocio reactiva (Signals)
 │   │   └── model/             # Entidades de dominio
@@ -74,7 +85,7 @@ dart_gemini_example/
 
 ## 📡 Módulos y Flujos del Sistema
 
-La aplicación expone y gestiona diferentes flujos reactivos mediante controladores en el dominio:
+La aplicación expone y gestiona flujos reactivos mediante controladores en el dominio, con dependencias inyectadas por constructor:
 
 ### 👤 Módulo de Usuarios & Autenticación
 - **Inicio de Sesión:** Manejado a través de Supabase y `SplashScreen`.

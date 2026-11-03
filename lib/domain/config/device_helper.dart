@@ -10,63 +10,65 @@ class DeviceResult {
   DeviceResult(this.name, this.code);
 }
 
+typedef DeviceInfoLoader = Future<DeviceResult> Function();
+
 final class DeviceHelper {
   static Future<DeviceResult> getDevice() async {
     final deviceInfo = DeviceInfoPlugin();
-    late String name;
-    late String code;
-
-    if (Platform.isAndroid) {
-      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-      name = androidInfo.model;
-      code = androidInfo.id;
+    if (kIsWeb) {
+      final webInfo = await deviceInfo.webBrowserInfo;
+      return DeviceResult(
+        webInfo.browserName.name,
+        webInfo.userAgent ?? webInfo.appName ?? 'web',
+      );
+    } else if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      final name = androidInfo.model;
+      final code = androidInfo.id;
 
       if (kDebugMode) {
         print('Running on ${androidInfo.model}');
       }
-    }
-
-    if (Platform.isIOS) {
-      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-      name = iosInfo.name;
-      code = iosInfo.identifierForVendor!;
+      return DeviceResult(name, code);
+    } else if (Platform.isIOS) {
+      final iosInfo = await deviceInfo.iosInfo;
+      final name = iosInfo.name;
+      final code = iosInfo.identifierForVendor!;
 
       if (kDebugMode) {
         print('Running on ${iosInfo.utsname.machine}');
       }
-    }
-
-    if (Platform.isLinux) {
-      LinuxDeviceInfo linuxInfo = await deviceInfo.linuxInfo;
-      name = linuxInfo.name;
-      code = linuxInfo.machineId!;
+      return DeviceResult(name, code);
+    } else if (Platform.isLinux) {
+      final linuxInfo = await deviceInfo.linuxInfo;
+      final name = linuxInfo.name;
+      final code = linuxInfo.machineId!;
 
       if (kDebugMode) {
         print('Running on ${linuxInfo.name}');
       }
-    }
-
-    if (Platform.isMacOS) {
-      MacOsDeviceInfo macOsInfo = await deviceInfo.macOsInfo;
-      name = macOsInfo.computerName;
-      code = macOsInfo.systemGUID!;
+      return DeviceResult(name, code);
+    } else if (Platform.isMacOS) {
+      final macOsInfo = await deviceInfo.macOsInfo;
+      final name = macOsInfo.computerName;
+      final code = macOsInfo.systemGUID!;
 
       if (kDebugMode) {
         print('Running on ${macOsInfo.computerName}');
       }
-    }
-
-    if (Platform.isWindows) {
-      WindowsDeviceInfo windowsInfo = await deviceInfo.windowsInfo;
-      name = windowsInfo.computerName;
-      code = windowsInfo.deviceId;
+      return DeviceResult(name, code);
+    } else if (Platform.isWindows) {
+      final windowsInfo = await deviceInfo.windowsInfo;
+      final name = windowsInfo.computerName;
+      final code = windowsInfo.deviceId;
 
       if (kDebugMode) {
         print('Running on ${windowsInfo.computerName}');
       }
+      return DeviceResult(name, code);
     }
 
-    return DeviceResult(name, code);
+    throw UnsupportedError('This platform is not supported.');
   }
 
   static String formatDeviceName(String name) {

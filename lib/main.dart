@@ -1,11 +1,15 @@
-import 'package:dart_gemini_example/presentation/screen/api_key_screen.dart';
-import 'package:dart_gemini_example/presentation/screen/chat_screen.dart';
-import 'package:dart_gemini_example/presentation/screen/splash_screen.dart';
+import 'package:dart_gemini_example/presentation/provider/app_provider.dart';
+import 'package:dart_gemini_example/presentation/routes/app_routes.dart';
 import 'package:flutter/material.dart';
-import 'package:page_transition/page_transition.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const GenerativeAISample());
+  runApp(
+    MultiProvider(
+      providers: providers,
+      child: const GenerativeAISample(),
+    ),
+  );
 }
 
 class GenerativeAISample extends StatelessWidget {
@@ -13,55 +17,59 @@ class GenerativeAISample extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter + Generative AI',
-      theme: _lightTheme(),
-      initialRoute: SplashScreen.routeName,
-      onGenerateRoute: _route,
+      title: 'Gemini Chat',
+      theme: _theme(),
+      routerConfig: AppRoutes.router,
     );
   }
 
-  ThemeData _lightTheme() {
+  ThemeData _theme() {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF6750A4),
+      brightness: Brightness.light,
+    );
+
     return ThemeData(
-      colorScheme: ColorScheme.fromSeed(
-        brightness: Brightness.light,
-        seedColor: const Color(0xFF0C298B),
-        surface: Colors.white,
-        onPrimary: const Color(0xFF0C298B),
-      ),
       useMaterial3: true,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: colorScheme.surface,
+      appBarTheme: AppBarTheme(
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          color: colorScheme.onSurface,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
     );
-  }
-
-  Route<dynamic>? _route(RouteSettings settings) {
-    switch (settings.name) {
-      //splash
-      case SplashScreen.routeName:
-        return PageTransition(
-          child: const SplashScreen(),
-          type: PageTransitionType.fade,
-          settings: settings,
-        );
-
-      //chat
-      case ChatScreen.routeName:
-        return PageTransition(
-          child: const ChatScreen(),
-          type: PageTransitionType.bottomToTop,
-          settings: settings,
-        );
-
-      //api-key
-      case ApiKeyScreen.routeName:
-        return PageTransition(
-          child: const ApiKeyScreen(),
-          type: PageTransitionType.bottomToTop,
-          settings: settings,
-        );
-
-      default:
-        return null;
-    }
   }
 }

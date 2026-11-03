@@ -1,12 +1,17 @@
 import 'package:dart_gemini_example/domain/controller/api_key_controller.dart';
+import 'package:dart_gemini_example/domain/model/async_state.dart';
+import 'package:dart_gemini_example/presentation/screen/api_key_screen.dart';
 import 'package:dart_gemini_example/presentation/widget/chat/chat.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 
 class ChatScreen extends StatefulWidget {
   static const routeName = "/chat";
 
-  const ChatScreen({super.key});
+  const ChatScreen({super.key, required this.controller});
+
+  final ApiKeyController controller;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -14,110 +19,76 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   @override
+  void initState() {
+    super.initState();
+    widget.controller.loadApiKey();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Flutter + Generative AI'),
+        title: const Text('Gemini'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.only(left: 32, right: 32),
-        child: GetBuilder<ApiKeyController>(
-          initState: (state) {
-            ApiKeyController.to.getApiKey();
-          },
-          builder: (result) {
-            return StreamBuilder<String>(
-              stream: result.apiKeyStream,
-              builder: (context, AsyncSnapshot<String> snapshot) {
-                //Si esta esperando data para el stream
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return _buildLoadingWidget(context);
-
-                  //Si hay data en el stream
-                } else if (snapshot.connectionState == ConnectionState.active &&
-                    !snapshot.hasError) {
-                  return _buildDataWidget(context, snapshot.data!);
-
-                  //Si hay un error en el stream
-                } else if (snapshot.hasError) {
-                  return _buildErrorWidget(context, snapshot.error);
-
-                  //Si se completo el stream
-                } else if (snapshot.connectionState == ConnectionState.done) {
-                  return _buildCompleteWidget(context);
-                } else {
-                  return _buildLoadingWidget(context);
-                }
-              },
-            );
+      body: SafeArea(
+        child: SignalBuilder(
+          builder: (context) {
+            final state = widget.controller.state.value;
+            return switch (state.status) {
+              AsyncStateStatus.initial ||
+              AsyncStateStatus.loading =>
+                const Center(child: CircularProgressIndicator()),
+              AsyncStateStatus.completed when state.data != null =>
+                ChatWidget(apiKey: state.data!),
+              AsyncStateStatus.completed ||
+              AsyncStateStatus.error =>
+                _buildMissingApiKey(context),
+            };
           },
         ),
       ),
     );
   }
 
-  Widget _buildCompleteWidget(BuildContext context) {
+  Widget _buildMissingApiKey(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
-      child: Text('Done!'.tr),
-    );
-  }
-
-  Widget _buildLoadingWidget(BuildContext context) {
-    return Center(
-      child: CircularProgressIndicator(
-        color: Theme.of(context).colorScheme.onPrimary,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.key_off_rounded,
+                size: 44,
+                color: colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Gemini API key unavailable',
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Add a valid API key to start a conversation.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: () => context.push(ApiKeyScreen.routeName),
+                icon: const Icon(Icons.key_rounded),
+                label: const Text('Configure API key'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
-  }
-
-  Widget _buildErrorWidget(BuildContext context, Object? error) {
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!context.mounted) return;
-      Navigator.of(context).pop();
-    });
-    return Column(
-      children: [
-        const SizedBox(height: 40),
-        Icon(
-          Icons.error,
-          color: Theme.of(context).colorScheme.error,
-          size: 100,
-        ),
-        const SizedBox(height: 40),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Error'.tr,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontSize: 18,
-                fontFamily: 'OpenSans',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Try again'.tr,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontFamily: 'OpenSans',
-                fontSize: 36,
-                fontWeight: FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDataWidget(BuildContext context, String apiKey) {
-    return ChatWidget(apiKey: apiKey);
   }
 }
