@@ -1,142 +1,87 @@
-# dart_gemini_example
+# Gemini Chat en Flutter
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.38.9-blue.svg)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.10-blue.svg)](https://dart.dev)
-[![Signals](https://img.shields.io/badge/Signals-State%20Management-purple.svg)](https://pub.dev/packages/signals_flutter)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Data%20Access-teal.svg)](https://pub.dev/packages/postgres)
-[![Supabase](https://img.shields.io/badge/Supabase-Auth-green.svg)](https://supabase.com)
+Aplicación de chat multiplataforma desarrollada con Flutter que permite
+conversar con la API de Gemini. El usuario configura su propia clave de API,
+que se guarda localmente en el dispositivo y se utiliza para iniciar una
+conversación.
 
-Aplicación multiplataforma (Desktop, Mobile, Web) desarrollada con **Flutter 3.38.9** y **Dart ^3.10**, con arquitectura reactiva por capas, gestión de estado mediante **Signals**, navegación con **GoRouter** e inyección de dependencias con **Provider**.
+La aplicación organiza el inicio, la configuración de la clave y el chat en
+pantallas separadas. GoRouter gestiona la navegación, Provider inyecta los
+controladores y Signals expone el estado de las operaciones del dominio.
 
----
+## Características
 
-## 🚀 Características Principales
+- Configurar, guardar y volver a cargar una clave de Gemini por dispositivo.
+- Enviar mensajes y mantener el contexto de la conversación mientras el chat
+  está abierto.
+- Mostrar el historial, el indicador de respuesta y los errores de red.
+- Inicializar el dispositivo y dirigir al usuario al chat o a la configuración
+  de la clave según su estado.
+- Persistir los datos del dispositivo y la clave en una base de datos SQLite
+  local.
+- Navegar entre las pantallas de inicio, configuración de clave y chat con
+  GoRouter.
+- Gestionar estados de carga, éxito y error mediante Signals.
 
-- **Gestión de Estado Reactiva:** Implementación estricta y reactiva mediante **Signals** (`signals_flutter`).
-- **Navegación & Deep Linking:** Enrutamiento declarativo multiplataforma utilizando **GoRouter**.
-- **Inyección de Dependencias:** `MultiProvider` registra repositorios y controladores con dependencias explícitas por constructor.
-- **Acceso Asíncrono a PostgreSQL:** Persistencia directa y no bloqueante mediante el paquete `postgres`, protegida concurrentemente con `Mutex`.
-- **Autenticación e Inicialización:** Integración fluida con **Supabase** (`supabase_flutter`).
-- **Logging Unificado:** Monitoreo y trazabilidad de eventos estructurado con **Signale** (`signale`).
-- **Soporte Multiplataforma:** Soporte optimizado para Desktop (Windows, macOS, Linux vía `window_manager`), Web y Mobile.
-- **Integración con IA / Agentes:** Sistema modular de *Skills* en `.agents/skills/` e instrucciones centralizadas en `AGENTS.md`.
-
----
-
-## 🛠️ Stack Tecnológico
-
-| Componente | Tecnología | Versión / Detalle |
-| :--- | :--- | :--- |
-| **Lenguaje & Runtime** | Dart | `^3.10` |
-| **Framework Base** | Flutter | `3.38.9` |
-| **Gestión de Estado** | Signals | `signals_flutter` (Estándar obligatorio) |
-| **Navegación** | GoRouter | Routing declarativo y deep links |
-| **Inyección de Dependencias** | Provider | `MultiProvider` y dependencias explícitas por constructor |
-| **Autenticación** | Supabase | `supabase_flutter` |
-| **Base de Datos** | PostgreSQL direct | `postgres` (Con `Mutex` por servicio) |
-| **Logging** | Signale | `signale` (`Log.i`, `Log.e`, `Log.d`) |
-| **Configuración** | Flutter Dotenv | `flutter_dotenv` (`.env` asset) |
-| **Gestión de Ventanas** | Window Manager | `window_manager` (Desktop: Win/macOS/Linux) |
-| **Manejo de Nulos** | Optional | `optional` (Null-handling seguro en capa de datos) |
-
----
-
-## Gemini API
-
-El chat usa `google_generative_ai` con el modelo `gemini-3.6-flash`. La versión
-actual de `google_generative_ai` está obsoleta y ya no recibe mantenimiento;
-Google recomienda migrar las aplicaciones Flutter a Firebase AI Logic. Esa
-migración requiere configurar Firebase y reemplazar el flujo actual de API Key.
-Consulta la [guía oficial de bibliotecas Gemini](https://ai.google.dev/gemini-api/docs/libraries)
-antes de desplegar esta integración en producción.
-
----
-
-## 📂 Arquitectura del Proyecto
-
-El proyecto sigue una arquitectura reactiva en capas con separación estricta de responsabilidades:
+## Arquitectura
 
 ```text
-dart_gemini_example/
-├── .agents/skills/            # Skills y guías de conocimiento modular para agentes de IA
-├── .github/workflows/         # Pipelines de CI/CD para despliegue automatizado
-├── lib/
-│   ├── data/                  # Repositorios e implementación PostgreSQL
-│   │   ├── postgresql/
-│   │   │   ├── configuration/ # Configuración de conexión a PostgreSQL
-│   │   │   └── service/       # Servicios de consultas SQL (con Mutex)
-│   │   └── repository/        # Implementación concreta de repositorios
-│   ├── domain/                # Lógica de dominio y estado con Signals
-│   │   ├── config/            # Helpers de Mutex, Log, Context, PostgreSQL
-│   │   ├── controllers/       # Lógica de negocio reactiva (Signals)
-│   │   └── model/             # Entidades de dominio
-│   └── presentation/          # Capa de Interfaz de Usuario y Rutas
-│       ├── routes/            # Configuración de GoRouter (app_routes.dart)
-│       ├── screens/           # Pantallas (StatefulWidget + Watch / SignalBuilder)
-│       ├── theme/             # Estilos y tema visual (Dark mode por defecto)
-│       └── widgets/           # Componentes de UI reutilizables
-├── .env                       # Variables de entorno (Supabase URL / Key)
-├── AGENTS.md                  # Instrucciones y directrices para agentes IA y desarrolladores
-├── analysis_options.yaml      # Reglas del analizador estático de Dart
-└── pubspec.yaml               # Configuración de dependencias y assets Flutter
+lib/
+├── data/
+│   └── database/
+│       ├── configuration/  # Apertura de SQLite y creación de tablas
+│       └── repository/     # Persistencia local del dispositivo
+├── domain/
+│   ├── config/              # Dispositivo, SQLite, enums y tipos
+│   ├── controller/          # Controladores de inicio y clave API con Signals
+│   └── model/               # Dispositivo y estado asíncrono
+└── presentation/
+    ├── provider/            # Inyección de dependencias con Provider
+    ├── routes/              # Rutas y transiciones con GoRouter
+    ├── screen/              # Inicio, clave API y chat
+    ├── theme/               # Tema y estilos
+    └── widget/              # Componentes de chat, mensajes e imágenes
 ```
 
----
+Los controladores de dominio son clases Dart que utilizan Signals y reciben el
+repositorio por constructor. La interfaz observa su estado con
+`signals_flutter`. El chat consume la API de Gemini y mantiene su historial en
+memoria durante la sesión actual.
 
-## 📡 Módulos y Flujos del Sistema
+## API de Gemini
 
-La aplicación expone y gestiona flujos reactivos mediante controladores en el dominio, con dependencias inyectadas por constructor:
+Antes de usar la aplicación, crea una clave en
+[Google AI Studio](https://aistudio.google.com/app/apikey) y configúrala desde
+la pantalla de conexión. La clave se almacena en la base de datos SQLite local
+del dispositivo; no la incluyas en el código ni la subas al repositorio.
 
-### 👤 Módulo de Usuarios & Autenticación
-- **Inicio de Sesión:** Manejado a través de Supabase y `SplashScreen`.
-- **Carga de Usuarios:** Gestión reactiva con `GetUserDataModel` y Signals.
+La integración actual utiliza `google_generative_ai` y el modelo
+`gemini-3.6-flash`. La biblioteca de Gemini usada por Flutter está obsoleta y
+ya no recibe mantenimiento; consulta la
+[guía oficial de bibliotecas Gemini](https://ai.google.dev/gemini-api/docs/libraries)
+antes de desplegar la integración en producción y considera migrar a Firebase
+AI Logic.
 
-### 📱 Módulo de Dispositivos & Entidades
-- **Transacciones de Datos:** Operaciones protegidas mediante `TransactionHelper` (`beginTransaction`, `commit`, `rollback`).
-- **Consultas PostgreSQL:** Métodos asíncronos aislados concurrentemente mediante `Mutex`.
+## Requisitos
 
----
+- Flutter SDK instalado.
+- Dart SDK `>=3.5.0 <4.0.0`, según `pubspec.yaml`.
+- Una clave de API de Gemini para enviar mensajes.
 
-## ⚙️ Guía de Inicio Rápido
+## Desarrollo
 
-### Requisitos Previos
-- **Flutter SDK 3.38.9** (Dart ^3.10)
-- Archivo `.env` configurado en la raíz con las credenciales necesarias:
-  ```env
-  SUPABASE_URL=https://tu-proyecto.supabase.co
-  SUPABASE_KEY=tu-clave-supabase
-  ```
+Instala las dependencias y verifica el formato, el análisis estático y las
+pruebas:
 
-### 1. Obtener Dependencias
 ```bash
 flutter pub get
-```
-
-### 2. Validar Calidad del Código (Analizador Estático)
-```bash
+dart format lib/ test/
 flutter analyze
+flutter test
 ```
 
-### 3. Aplicar Formato Estándar de Código
-```bash
-dart format lib/
-```
+Para iniciar la aplicación en el dispositivo disponible:
 
-### 4. Ejecutar la Aplicación
 ```bash
-# Ejecutar en el dispositivo predeterminado
 flutter run
-
-# Ejecutar en plataformas específicas
-flutter run -d macos
-flutter run -d windows
-flutter run -d chrome
 ```
-
----
-
-## 📖 Guías para Desarrolladores y Agentes
-
-Para más detalles sobre reglas críticas, arquitectura de capas, patrones de diseño e integración de *Skills*, consulta el archivo de instrucciones centralizado:
-
-- [AGENTS.md](AGENTS.md) — Guía completa de arquitectura, reglas críticas y desarrollo.
